@@ -1,5 +1,8 @@
+local coreName = GetResourceState("qbx-core") ~= "missing" and "qbx-core" or "qb-core"
+local QBCore = exports[coreName]:GetCoreObject()
+
 RegisterNetEvent('oil:showStatusMenu', function(well)
-    local playerCid = LocalPlayer.state.citizenid
+    local playerCid = QBCore.Functions.GetPlayerData().citizenid
     local ownerLabel = not well.owner and 'Disponible' or (well.owner == playerCid and 'Tú' or 'Otro Jugador')
 
     lib.registerContext({
@@ -15,11 +18,13 @@ RegisterNetEvent('oil:showStatusMenu', function(well)
 end)
 
 CreateThread(function()
-    while not LocalPlayer.state.citizenid do Wait(500) end
-    local cid = LocalPlayer.state.citizenid
+    while not QBCore.Functions.GetPlayerData().citizenid do
+        Wait(500)
+    end
+    local cid = QBCore.Functions.GetPlayerData().citizenid
 
     for _, loc in pairs(Config.OilLocations) do
-        lib.callback('oil:getWellOwner', false, loc.id, function(owner)
+        lib.callback('oil:getWellOwner', false, function(owner)
             local options = {
                 {
                     name = 'status_' .. loc.id,
@@ -66,6 +71,6 @@ CreateThread(function()
                 debug = false,
                 options = options
             })
-        end)
+        end, loc.id)
     end
 end)
