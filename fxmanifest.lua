@@ -17,8 +17,9 @@ server_scripts {
 }
 
 dependencies {
-    'qb-core',
     'ox_lib',
     'ox_inventory',
-    'oxmysql'
+    'oxmysql',
+    'ox_target'
 }
+-- qb-core or qbx-core should be installed but is detected at runtime

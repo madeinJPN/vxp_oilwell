@@ -1,4 +1,5 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+local coreName = GetResourceState("qbx-core") ~= "missing" and "qbx-core" or "qb-core"
+local QBCore = exports[coreName]:GetCoreObject()
 local oilWells = {}
 
 AddEventHandler('onResourceStart', function(resource)
@@ -98,7 +99,7 @@ RegisterNetEvent('oil:maintain', function(wellId)
     TriggerClientEvent('ox_lib:notify', src, { description = 'Pozo mantenido correctamente.', type = 'success' })
 end)
 
-lib.callback.register('oil:getWellOwner', function(wellId)
+lib.callback.register('oil:getWellOwner', function(source, wellId)
     local well = oilWells[wellId]
     return well and well.owner or nil
 end)
