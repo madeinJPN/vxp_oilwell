@@ -1,11 +1,17 @@
 local coreName = GetResourceState("qbx-core") ~= "missing" and "qbx-core" or "qb-core"
 local QBCore = exports[coreName]:GetCoreObject()
 local oilWells = {}
+local wellPrices = {}
+
+for _, loc in pairs(Config.OilLocations) do
+    wellPrices[loc.id] = loc.price or Config.DefaultWellPrice
+end
 
 AddEventHandler('onResourceStart', function(resource)
     if resource == GetCurrentResourceName() then
         MySQL.Async.fetchAll('SELECT * FROM oil_wells', {}, function(results)
             for _, well in pairs(results) do
+                well.price = wellPrices[well.id] or Config.DefaultWellPrice
                 oilWells[well.id] = well
             end
         end)
@@ -54,9 +60,16 @@ RegisterNetEvent('oil:buy', function(wellId)
     local Player = QBCore.Functions.GetPlayer(src)
     local well = oilWells[wellId]
     if well and not well.owner then
+        local price = wellPrices[wellId] or Config.DefaultWellPrice
+        if Player.Functions.GetMoney('bank') < price then
+            TriggerClientEvent('ox_lib:notify', src, { description = 'No tienes suficiente dinero.', type = 'error' })
+            return
+        end
+        Player.Functions.RemoveMoney('bank', price, 'buy-oil-well')
         MySQL.Async.execute('UPDATE oil_wells SET owner = ? WHERE id = ?', { Player.PlayerData.citizenid, wellId })
         well.owner = Player.PlayerData.citizenid
         TriggerClientEvent('ox_lib:notify', src, { description = 'Pozo comprado con éxito.', type = 'success' })
+        TriggerClientEvent('oil:updateWellOwner', -1, wellId, well.owner)
     else
         TriggerClientEvent('ox_lib:notify', src, { description = 'Este pozo ya tiene dueño.', type = 'error' })
     end

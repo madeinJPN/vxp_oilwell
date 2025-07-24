@@ -1,6 +1,25 @@
 local coreName = GetResourceState("qbx-core") ~= "missing" and "qbx-core" or "qb-core"
 local QBCore = exports[coreName]:GetCoreObject()
 
+local wellBlips = {}
+local locMap = {}
+for _, loc in pairs(Config.OilLocations) do
+    locMap[loc.id] = loc.coords
+end
+
+local function createBlip(id)
+    local c = locMap[id]
+    local blip = AddBlipForCoord(c.x, c.y, c.z)
+    SetBlipSprite(blip, Config.BlipSprite)
+    SetBlipScale(blip, Config.BlipScale)
+    SetBlipColour(blip, Config.BlipColor)
+    SetBlipAsShortRange(blip, true)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(Config.BlipLabel)
+    EndTextCommandSetBlipName(blip)
+    return blip
+end
+
 RegisterNetEvent('oil:showStatusMenu', function(well)
     local playerCid = QBCore.Functions.GetPlayerData().citizenid
     local ownerLabel = not well.owner and 'Disponible' or (well.owner == playerCid and 'Tú' or 'Otro Jugador')
@@ -12,9 +31,21 @@ RegisterNetEvent('oil:showStatusMenu', function(well)
             { title = 'Dueño: ' .. ownerLabel },
             { title = 'Petróleo: ' .. well.oil_amount .. 'L' },
             { title = 'Mantenimiento: ' .. (well.maintained == 1 and 'Sí' or 'No') },
+            (not well.owner) and { title = 'Precio: $' .. well.price } or nil,
         }
     })
     lib.showContext('oil_status_' .. well.id)
+end)
+
+RegisterNetEvent('oil:updateWellOwner', function(id, owner)
+    local cid = QBCore.Functions.GetPlayerData().citizenid
+    if wellBlips[id] then
+        RemoveBlip(wellBlips[id])
+        wellBlips[id] = nil
+    end
+    if Config.ShowBlips and (not owner or owner == cid) then
+        wellBlips[id] = createBlip(id)
+    end
 end)
 
 CreateThread(function()
@@ -24,17 +55,10 @@ CreateThread(function()
     local cid = QBCore.Functions.GetPlayerData().citizenid
 
     for _, loc in pairs(Config.OilLocations) do
-        if Config.ShowBlips then
-            local blip = AddBlipForCoord(loc.coords.x, loc.coords.y, loc.coords.z)
-            SetBlipSprite(blip, Config.BlipSprite)
-            SetBlipScale(blip, Config.BlipScale)
-            SetBlipColour(blip, Config.BlipColor)
-            SetBlipAsShortRange(blip, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentString(Config.BlipLabel)
-            EndTextCommandSetBlipName(blip)
-        end
         lib.callback('oil:getWellOwner', false, function(owner)
+            if Config.ShowBlips and (not owner or owner == cid) then
+                wellBlips[loc.id] = createBlip(loc.id)
+            end
             local options = {
                 {
                     name = 'status_' .. loc.id,

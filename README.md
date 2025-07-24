@@ -4,7 +4,10 @@ Sistema de pozos petroleros compatible con QBCore (o QBox), ox_lib, ox_inventory
 
 El cliente y el servidor detectan automáticamente si se está utilizando `qb-core` o `qbx-core`.
 
-Los pozos aparecen marcados en el mapa mediante blips configurables. El script se centra únicamente en la extracción del petróleo y no incluye un sistema de venta.
+
+Los pozos aparecen marcados en el mapa mediante blips configurables. Si un pozo tiene dueño el blip solo es visible para su propietario; de lo contrario todos los jugadores podrán ver el marcador. El script se centra únicamente en la extracción del petróleo y no incluye un sistema de venta.
+
+Cada pozo define su propio precio dentro de `Config.OilLocations`. Al comprarlo se descuenta dicho valor del banco del jugador.
 
 ## Instalación
 
