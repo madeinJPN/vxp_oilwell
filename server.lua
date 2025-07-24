@@ -10,9 +10,23 @@ end
 AddEventHandler('onResourceStart', function(resource)
     if resource == GetCurrentResourceName() then
         MySQL.Async.fetchAll('SELECT * FROM oil_wells', {}, function(results)
+            local existing = {}
             for _, well in pairs(results) do
                 well.price = wellPrices[well.id] or Config.DefaultWellPrice
                 oilWells[well.id] = well
+                existing[well.id] = true
+            end
+            for _, loc in pairs(Config.OilLocations) do
+                if not existing[loc.id] then
+                    MySQL.Async.execute('INSERT INTO oil_wells (id) VALUES (?)', { loc.id })
+                    oilWells[loc.id] = {
+                        id = loc.id,
+                        owner = nil,
+                        oil_amount = 0,
+                        maintained = 0,
+                        price = wellPrices[loc.id] or Config.DefaultWellPrice
+                    }
+                end
             end
         end)
     end
@@ -22,24 +36,27 @@ CreateThread(function()
     while true do
         Wait(600000)
         for id, well in pairs(oilWells) do
-            if well.maintained == 1 and well.oil_amount < 10000 then
-                local newAmt = math.min(10000, well.oil_amount + 250)
+            local levelCfg = Config.MaintenanceLevels[well.maintained]
+            if levelCfg and well.oil_amount < 10000 then
+                local newAmt = math.min(10000, well.oil_amount + levelCfg.rate)
                 MySQL.Async.execute('UPDATE oil_wells SET oil_amount = ? WHERE id = ?', { newAmt, id })
                 well.oil_amount = newAmt
             end
 
-            well._ticks = (well._ticks or 0) + 1
-            if well._ticks >= 6 then
-                MySQL.Async.execute('UPDATE oil_wells SET maintained = 0 WHERE id = ?', { id })
-                well.maintained = 0
-                well._ticks = 0
-                for _, playerId in pairs(QBCore.Functions.GetPlayers()) do
-                    local p = QBCore.Functions.GetPlayer(playerId)
-                    if p and p.PlayerData.citizenid == well.owner then
-                        TriggerClientEvent('ox_lib:notify', playerId, {
-                            description = 'Uno de tus pozos ha expirado por falta de mantenimiento.',
-                            type = 'error'
-                        })
+            if levelCfg then
+                well._ticks = (well._ticks or 0) + 1
+                if well._ticks >= levelCfg.duration then
+                    MySQL.Async.execute('UPDATE oil_wells SET maintained = 0 WHERE id = ?', { id })
+                    well.maintained = 0
+                    well._ticks = 0
+                    for _, playerId in pairs(QBCore.Functions.GetPlayers()) do
+                        local p = QBCore.Functions.GetPlayer(playerId)
+                        if p and p.PlayerData.citizenid == well.owner then
+                            TriggerClientEvent('ox_lib:notify', playerId, {
+                                description = 'Uno de tus pozos ha expirado por falta de mantenimiento.',
+                                type = 'error'
+                            })
+                        end
                     end
                 end
             end
@@ -95,24 +112,45 @@ RegisterNetEvent('oil:collect', function(wellId)
     TriggerClientEvent('ox_lib:notify', src, { description = 'Recolectaste 500L de petróleo.', type = 'success' })
 end)
 
-RegisterNetEvent('oil:maintain', function(wellId)
+RegisterNetEvent('oil:maintain', function(wellId, level)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     local well = oilWells[wellId]
     if not well or well.owner ~= Player.PlayerData.citizenid then return end
-    if exports.ox_inventory:Search(src, 'count', 'wrench') < 1 or exports.ox_inventory:Search(src, 'count', 'oil_filter') < 1 then
-        TriggerClientEvent('ox_lib:notify', src, { description = 'Faltan materiales de mantenimiento.', type = 'error' })
-        return
+    level = level or 1
+    local cfg = Config.MaintenanceLevels[level]
+    if not cfg then return end
+
+    for item, count in pairs(cfg.items) do
+        if exports.ox_inventory:Search(src, 'count', item) < count then
+            TriggerClientEvent('ox_lib:notify', src, { description = 'Faltan materiales de mantenimiento.', type = 'error' })
+            return
+        end
     end
-    exports.ox_inventory:RemoveItem(src, 'wrench', 1)
-    exports.ox_inventory:RemoveItem(src, 'oil_filter', 1)
-    well.maintained = 1
+
+    for item, count in pairs(cfg.items) do
+        exports.ox_inventory:RemoveItem(src, item, count)
+    end
+
+    well.maintained = level
     well._ticks = 0
-    MySQL.Async.execute('UPDATE oil_wells SET maintained = 1 WHERE id = ?', { wellId })
+    MySQL.Async.execute('UPDATE oil_wells SET maintained = ? WHERE id = ?', { level, wellId })
     TriggerClientEvent('ox_lib:notify', src, { description = 'Pozo mantenido correctamente.', type = 'success' })
 end)
 
 lib.callback.register('oil:getWellOwner', function(source, wellId)
     local well = oilWells[wellId]
     return well and well.owner or nil
+end)
+
+lib.callback.register('oil:getPlayerWells', function(source)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return {} end
+    local wells = {}
+    for id, well in pairs(oilWells) do
+        if well.owner == Player.PlayerData.citizenid then
+            wells[#wells + 1] = well
+        end
+    end
+    return wells
 end)
