@@ -9,6 +9,11 @@ Los pozos aparecen marcados en el mapa mediante blips configurables. Si un pozo 
 
 Cada pozo define su propio precio dentro de `Config.OilLocations`. Al comprarlo se descuenta dicho valor del banco del jugador.
 
+## Funciones adicionales
+
+- **Mantenimiento avanzado**: existen dos niveles de mantenimiento. El nivel avanzado genera más petróleo y dura más tiempo, pero requiere un `advanced_oil_kit` junto a las herramientas básicas.
+- **Interfaz de gestión**: utilice el comando `/oilmanage` para abrir un menú con todos sus pozos y ver rápidamente su estado.
+
 ## Instalación
 
 1. Importe `schema.sql` en su base de datos.

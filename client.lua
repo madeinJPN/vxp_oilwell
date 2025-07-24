@@ -30,7 +30,7 @@ RegisterNetEvent('oil:showStatusMenu', function(well)
         options = {
             { title = 'Dueño: ' .. ownerLabel },
             { title = 'Petróleo: ' .. well.oil_amount .. 'L' },
-            { title = 'Mantenimiento: ' .. (well.maintained == 1 and 'Sí' or 'No') },
+            { title = 'Mantenimiento: ' .. (well.maintained > 0 and ('Nivel ' .. well.maintained) or 'No') },
             (not well.owner) and { title = 'Precio: $' .. well.price } or nil,
         }
     })
@@ -89,11 +89,19 @@ CreateThread(function()
                     end
                 }
                 options[#options + 1] = {
-                    name = 'maintain_' .. loc.id,
-                    label = 'Dar Mantenimiento',
+                    name = 'maintain_basic_' .. loc.id,
+                    label = 'Mantenimiento Básico',
                     icon = 'fa-solid fa-wrench',
                     onSelect = function()
-                        TriggerServerEvent('oil:maintain', loc.id)
+                        TriggerServerEvent('oil:maintain', loc.id, 1)
+                    end
+                }
+                options[#options + 1] = {
+                    name = 'maintain_adv_' .. loc.id,
+                    label = 'Mantenimiento Avanzado',
+                    icon = 'fa-solid fa-gears',
+                    onSelect = function()
+                        TriggerServerEvent('oil:maintain', loc.id, 2)
                     end
                 }
             end
@@ -107,4 +115,25 @@ CreateThread(function()
             })
         end, loc.id)
     end
+end)
+
+RegisterCommand('oilmanage', function()
+    lib.callback('oil:getPlayerWells', false, function(wells)
+        if not wells or #wells == 0 then
+            lib.notify({ description = 'No tienes pozos.', type = 'error' })
+            return
+        end
+        local opts = {}
+        for _, well in pairs(wells) do
+            opts[#opts + 1] = {
+                title = 'Pozo #' .. well.id,
+                description = well.oil_amount .. 'L - Nivel ' .. (well.maintained or 0),
+                onSelect = function()
+                    TriggerEvent('oil:showStatusMenu', well)
+                end
+            }
+        end
+        lib.registerContext({ id = 'oil_manage', title = 'Mis Pozos', options = opts })
+        lib.showContext('oil_manage')
+    end)
 end)
