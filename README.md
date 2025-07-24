@@ -13,6 +13,7 @@ Cada pozo define su propio precio dentro de `Config.OilLocations`. Al comprarlo 
 
 - **Mantenimiento avanzado**: existen dos niveles de mantenimiento. El nivel avanzado genera más petróleo y dura más tiempo, pero requiere un `advanced_oil_kit` junto a las herramientas básicas.
 - **Interfaz de gestión**: utilice el comando `/oilmanage` para abrir un menú con todos sus pozos y ver rápidamente su estado.
+- **Menús mejorados**: tras comprar un pozo, las opciones del objetivo se actualizan al instante y muestran textos más descriptivos.
 
 ## Ítems requeridos
 
