@@ -33,7 +33,6 @@ cargará automáticamente al iniciar el recurso.
 
 - Nivel básico: `wrench` x1 y `oil_filter` x1.
 - Nivel avanzado: `wrench` x1, `oil_filter` x1 y `advanced_oil_kit` x1.
-
 ## Instalación
 
 1. Importe `schema.sql` en su base de datos.

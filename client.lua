@@ -94,7 +94,7 @@ RegisterNetEvent('oil:showStatusMenu', function(well)
     local playerCid = QBCore.Functions.GetPlayerData().citizenid
     local ownerLabel = not well.owner and 'Disponible' or (well.owner == playerCid and 'Tú' or 'Otro Jugador')
 
-        local opts = {
+    local opts = {
         { title = 'Dueño: ' .. ownerLabel },
         { title = ('Petroleo almacenado: %dL'):format(well.oil_amount) },
         { title = ('Nivel de mantenimiento: %d'):format(well.maintained or 0) },
@@ -108,6 +108,16 @@ RegisterNetEvent('oil:showStatusMenu', function(well)
             onSelect = function()
                 TriggerServerEvent('oil:maintain', well.id, 1)
             end
+        
+    lib.registerContext({
+        id = 'oil_status_' .. well.id,
+        title = 'Pozo #' .. well.id,
+        options = {
+            { title = 'Dueño: ' .. ownerLabel },
+            { title = 'Petróleo: ' .. well.oil_amount .. 'L' },
+            { title = 'Mantenimiento: ' .. (well.maintained > 0 and ('Nivel ' .. well.maintained) or 'No') },
+            (not well.owner) and { title = 'Precio: $' .. well.price } or nil,
+
         }
         opts[#opts + 1] = {
             title = 'Mantenimiento avanzado',
@@ -146,6 +156,60 @@ CreateThread(function()
                 wellBlips[loc.id] = createBlip(loc.id)
             end
             refreshTargetZone(loc.id, owner)
+            local options = {
+                {
+                    name = 'status_' .. loc.id,
+                    label = 'Ver Estado del Pozo',
+                    icon = 'fa-solid fa-circle-info',
+                    onSelect = function()
+                        TriggerServerEvent('oil:getStatus', loc.id)
+                    end
+                }
+            }
+
+            if not owner then
+                options[#options + 1] = {
+                    name = 'buy_' .. loc.id,
+                    label = 'Comprar Pozo',
+                    icon = 'fa-solid fa-oil-can',
+                    onSelect = function()
+                        TriggerServerEvent('oil:buy', loc.id)
+                    end
+                }
+            elseif owner == cid then
+                options[#options + 1] = {
+                    name = 'collect_' .. loc.id,
+                    label = 'Recolectar Petróleo',
+                    icon = 'fa-solid fa-barrel',
+                    onSelect = function()
+                        TriggerServerEvent('oil:collect', loc.id)
+                    end
+                }
+                options[#options + 1] = {
+                    name = 'maintain_basic_' .. loc.id,
+                    label = 'Mantenimiento Básico',
+                    icon = 'fa-solid fa-wrench',
+                    onSelect = function()
+                        TriggerServerEvent('oil:maintain', loc.id, 1)
+                    end
+                }
+                options[#options + 1] = {
+                    name = 'maintain_adv_' .. loc.id,
+                    label = 'Mantenimiento Avanzado',
+                    icon = 'fa-solid fa-gears',
+                    onSelect = function()
+                        TriggerServerEvent('oil:maintain', loc.id, 2)
+                    end
+                }
+            end
+
+            exports.ox_target:addBoxZone({
+                coords = loc.coords,
+                size = vec3(2, 2, 2),
+                rotation = 0,
+                debug = false,
+                options = options
+            })
         end, loc.id)
     end
 end)
