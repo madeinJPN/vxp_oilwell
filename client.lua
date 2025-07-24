@@ -24,6 +24,16 @@ CreateThread(function()
     local cid = QBCore.Functions.GetPlayerData().citizenid
 
     for _, loc in pairs(Config.OilLocations) do
+        if Config.ShowBlips then
+            local blip = AddBlipForCoord(loc.coords.x, loc.coords.y, loc.coords.z)
+            SetBlipSprite(blip, Config.BlipSprite)
+            SetBlipScale(blip, Config.BlipScale)
+            SetBlipColour(blip, Config.BlipColor)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentString(Config.BlipLabel)
+            EndTextCommandSetBlipName(blip)
+        end
         lib.callback('oil:getWellOwner', false, function(owner)
             local options = {
                 {
