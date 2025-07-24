@@ -5,9 +5,6 @@ Config.OilLocations = {
     { id = 2, coords = vec3(1508.45, -2542.54, 56.05), price = 25000 }
 }
 
--- Precio por defecto si una localización no indica "price"
-Config.DefaultWellPrice = 20000
-
 -- Mostrar blips de los pozos en el mapa (si tienen dueño solo los verá su propietario)
 Config.ShowBlips = true
 Config.BlipSprite = 415 -- icono de gasolinera
