@@ -10,9 +10,23 @@ end
 AddEventHandler('onResourceStart', function(resource)
     if resource == GetCurrentResourceName() then
         MySQL.Async.fetchAll('SELECT * FROM oil_wells', {}, function(results)
+            local existing = {}
             for _, well in pairs(results) do
                 well.price = wellPrices[well.id] or Config.DefaultWellPrice
                 oilWells[well.id] = well
+                existing[well.id] = true
+            end
+            for _, loc in pairs(Config.OilLocations) do
+                if not existing[loc.id] then
+                    MySQL.Async.execute('INSERT INTO oil_wells (id) VALUES (?)', { loc.id })
+                    oilWells[loc.id] = {
+                        id = loc.id,
+                        owner = nil,
+                        oil_amount = 0,
+                        maintained = 0,
+                        price = wellPrices[loc.id] or Config.DefaultWellPrice
+                    }
+                end
             end
         end)
     end
